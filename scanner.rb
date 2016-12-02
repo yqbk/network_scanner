@@ -65,23 +65,23 @@ class Scanner
 
 
   def on_icmp_check_success
-    puts "#{@ip} is fitered (icmp received)"
+    puts "#{@ip} is fitered (icmp received) #{@dst}"
   end
 
   def on_timeout
-    puts "#{@ip} is filtered"
+    puts "#{@ip} is filtered #{@dst}"
   end
 
   def is_successful
-    puts "#{@ip} is up"
+    puts "#{@ip} is up #{@dst}"
   end
 
   def is_not_successful
-    puts "#{@ip} is down"
+    puts "#{@ip} is down #{@dst}"
   end
 
   def is_filtered
-    puts "#{@ip} is filtered"
+    puts "#{@ip} is filtered #{@dst}"
   end
 
   public
@@ -204,15 +204,15 @@ class UDP_scanner < Scanner
   end
 
   def on_timeout
-    puts "#{@ip} is open|filtered"
+    puts "#{@ip} is open|filtered #{@dst}"
   end
 
   def is_successful
-    puts "#{@ip} is up"
+    puts "#{@ip} is up #{@dst}"
   end
 
   def is_not_successful
-    puts "#{@ip} is down"
+    puts "#{@ip} is down #{@dst}"
   end
 
   public
@@ -225,14 +225,16 @@ class UDP_scanner < Scanner
           cap = PacketFu::Capture.new(:iface => @config[:iface], :start => true)
           cap.stream.each do |p|
             pkt = PacketFu::Packet.parse p
+            # puts("czujka -> " + @dst.to_s)
             if check_packet_type(pkt)
               is_successful
-              puts ("czy udp? " + pkt.is_udp?.to_s)
+              break
             elsif check_if_icmp(pkt)
-              if pkt.icmp_type == 3 and (pkt.icmp_code == 0 or 1 or 2 or 9 or 10 or 13)
-                is_filtered
-              elsif pkt.icmp_type == 3 and pkt.icmp_code == 3
+              # puts (" dostałem icmp: " + pkt.icmp_type.to_s + " - " + pkt.icmp_code.to_s)
+              if pkt.icmp_type == 3 and pkt.icmp_code == 3
                 is_not_successful
+              elsif pkt.icmp_type == 3 and (pkt.icmp_code == 0 or 1 or 2 or 9 or 10 or 13)
+                is_filtered
               end
               break
             else
@@ -253,12 +255,13 @@ class UDP_scanner < Scanner
 
 end
 
+# udp scann params
 ip = "192.168.0.10"
 dst = 53
 src = 1998
-timeout_value = 10
-tries = 1
-sleep_time = 2
+timeout_value = 22
+tries = 4
+sleep_time = 5
 
 scanner = UDP_scanner.new(ip, dst, src, timeout_value, tries, sleep_time)
 
@@ -268,7 +271,7 @@ scanner = UDP_scanner.new(ip, dst, src, timeout_value, tries, sleep_time)
 # end
 
 
-[53, 68, 137, 631].each do |port|
+[22, 53, 68, 137, 631].each do |port|
   scanner.set_dst_port(port)
   scanner.scann
 end
